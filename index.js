@@ -16,7 +16,7 @@ const storage = admin.storage().bucket();
 const db = admin.firestore();
 
 const app = express();
-const port = 3000;
+const port = 3001;
 
 const multerStorage = multer.memoryStorage();
 const upload = multer({ storage: multerStorage });
@@ -35,7 +35,9 @@ function extractTags(content) {
     const tags = doc.getFullText().match(/t\.\w+/g);
     return tags ? Array.from(new Set(tags)) : [];
 }
-
+app.get("/", (req, res) => {
+    res.send("Express on Vercel");
+  });
 // Endpoint to upload template to Firebase Storage and Firestore
 app.post('/upload-template', upload.single('template'), async (req, res) => {
     if (!req.file) {
@@ -146,3 +148,5 @@ app.get('/templates', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+
+module.exports = app;
