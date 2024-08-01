@@ -16,7 +16,7 @@ const storage = admin.storage().bucket();
 const db = admin.firestore();
 
 const app = express();
-const port = 3001;
+const port = 3000;
 
 const multerStorage = multer.memoryStorage();
 const upload = multer({ storage: multerStorage });
