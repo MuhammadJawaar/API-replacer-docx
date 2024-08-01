@@ -42,6 +42,7 @@ app.get("/", (req, res) => {
     res.send("Express on Vercel");
 });
 
+
 // Endpoint to upload template to Firebase Storage and Firestore
 app.post('/upload-template', upload.single('template'), async (req, res) => {
     if (!req.file) {
@@ -146,6 +147,39 @@ app.get('/templates', async (req, res) => {
         res.json(templates);
     } catch (error) {
         res.status(500).send('Error getting templates from Firestore');
+    }
+});
+
+app.post('/register', async (req, res) => {
+    const { email, password, nik, tanggalLahir, tempatLahir } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).send('Email and password are required');
+    }
+
+    try {
+        // Create user in Firebase Authentication
+        const userRecord = await auth.createUser({
+            email: email,
+            password: password,
+        });
+
+        // Add user details to Firestore
+        await db.collection('users').doc(userRecord.uid).set({
+            uid: userRecord.uid,
+            email: email,
+            nik: nik || '',
+            tanggalLahir: tanggalLahir || '',
+            tempatLahir: tempatLahir || '',
+        });
+
+        res.status(201).send({
+            uid: userRecord.uid,
+            email: userRecord.email,
+            message: 'User registered successfully',
+        });
+    } catch (error) {
+        res.status(500).send('Error registering user: ' + error.message);
     }
 });
 
