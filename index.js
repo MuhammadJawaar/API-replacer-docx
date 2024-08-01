@@ -5,8 +5,10 @@ const Docxtemplater = require('docxtemplater');
 const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid');
 
-const serviceAccount = require('./serviceAccountKey.json');
+// Ambil variabel lingkungan dan parsing JSON
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
 
+// Inisialisasi Firebase Admin
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     storageBucket: 'suratproject-38713.appspot.com',
@@ -35,9 +37,11 @@ function extractTags(content) {
     const tags = doc.getFullText().match(/t\.\w+/g);
     return tags ? Array.from(new Set(tags)) : [];
 }
+
 app.get("/", (req, res) => {
     res.send("Express on Vercel");
-  });
+});
+
 // Endpoint to upload template to Firebase Storage and Firestore
 app.post('/upload-template', upload.single('template'), async (req, res) => {
     if (!req.file) {
