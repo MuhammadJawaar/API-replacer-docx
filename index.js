@@ -150,6 +150,24 @@ app.get('/templates', async (req, res) => {
     }
 });
 
+// Endpoint to get user profile data
+app.get('/profile/:uid', async (req, res) => {
+    const { uid } = req.params;
+
+    try {
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (!userDoc.exists) {
+            return res.status(404).send('User not found');
+        }
+
+        const userData = userDoc.data();
+        res.json(userData);
+    } catch (error) {
+        res.status(500).send('Error getting user data: ' + error.message);
+    }
+});
+
+
 app.post('/register', async (req, res) => {
     const { email, password, nik, tanggalLahir, tempatLahir } = req.body;
 
