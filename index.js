@@ -16,6 +16,7 @@ admin.initializeApp({
 
 const storage = admin.storage().bucket();
 const db = admin.firestore();
+const auth = admin.auth(); // Pastikan Anda juga menginisialisasi Firebase Auth
 
 const app = express();
 const port = 5000;
@@ -41,7 +42,6 @@ function extractTags(content) {
 app.get("/", (req, res) => {
     res.send("Express on Vercel");
 });
-
 
 // Endpoint to upload template to Firebase Storage and Firestore
 app.post('/upload-template', upload.single('template'), async (req, res) => {
@@ -167,6 +167,33 @@ app.get('/profile/:uid', async (req, res) => {
     }
 });
 
+// Endpoint to update user profile data
+app.put('/profile/:uid', async (req, res) => {
+    const { uid } = req.params;
+    const { email, nik, tanggalLahir, tempatLahir } = req.body;
+
+    try {
+        const userRef = db.collection('users').doc(uid);
+
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) {
+            return res.status(404).send('User not found');
+        }
+
+        const updates = {
+            email: email || userDoc.data().email,
+            nik: nik || userDoc.data().nik,
+            tanggalLahir: tanggalLahir || userDoc.data().tanggalLahir,
+            tempatLahir: tempatLahir || userDoc.data().tempatLahir,
+        };
+
+        await userRef.update(updates);
+
+        res.send('User profile updated successfully');
+    } catch (error) {
+        res.status(500).send('Error updating user profile: ' + error.message);
+    }
+});
 
 app.post('/register', async (req, res) => {
     const { email, password, nik, tanggalLahir, tempatLahir } = req.body;
