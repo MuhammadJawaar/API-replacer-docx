@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 const express = require('express');
 const multer = require('multer');
 const PizZip = require('pizzip');
@@ -7,9 +5,10 @@ const Docxtemplater = require('docxtemplater');
 const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid');
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+// Ambil variabel lingkungan dan parsing JSON
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
 
-// Initialize Firebase Admin
+// Inisialisasi Firebase Admin
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     storageBucket: 'suratproject-38713.appspot.com',
@@ -17,10 +16,9 @@ admin.initializeApp({
 
 const storage = admin.storage().bucket();
 const db = admin.firestore();
-const auth = admin.auth();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = 5000;
 
 const multerStorage = multer.memoryStorage();
 const upload = multer({ storage: multerStorage });
@@ -43,6 +41,7 @@ function extractTags(content) {
 app.get("/", (req, res) => {
     res.send("Express on Vercel");
 });
+
 
 // Endpoint to upload template to Firebase Storage and Firestore
 app.post('/upload-template', upload.single('template'), async (req, res) => {
@@ -89,7 +88,7 @@ app.post('/upload-template', upload.single('template'), async (req, res) => {
     blobStream.end(req.file.buffer);
 });
 
-
+// Endpoint to generate DOCX file and send as download without saving to storage
 app.post('/generate-docx', upload.none(), async (req, res) => {
     const { templateId, ...replacements } = req.body;
 
@@ -168,29 +167,37 @@ app.get('/profile/:uid', async (req, res) => {
     }
 });
 
-// Endpoint to update user profile data
-app.put('/profile-update/:uid', async (req, res) => {
-    const { uid } = req.params;
-    const { email, nik, tanggalLahir, tempatLahir } = req.body;
+
+app.post('/register', async (req, res) => {
+    const { email, password, nik, tanggalLahir, tempatLahir } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).send('Email and password are required');
+    }
 
     try {
-        const userDoc = db.collection('users').doc(uid);
-        const userSnapshot = await userDoc.get();
-
-        if (!userSnapshot.exists) {
-            return res.status(404).send('User not found');
-        }
-
-        await userDoc.update({
-            email: email || userSnapshot.data().email,
-            nik: nik || userSnapshot.data().nik,
-            tanggalLahir: tanggalLahir || userSnapshot.data().tanggalLahir,
-            tempatLahir: tempatLahir || userSnapshot.data().tempatLahir,
+        // Create user in Firebase Authentication
+        const userRecord = await auth.createUser({
+            email: email,
+            password: password,
         });
 
-        res.send('User profile updated successfully');
+        // Add user details to Firestore
+        await db.collection('users').doc(userRecord.uid).set({
+            uid: userRecord.uid,
+            email: email,
+            nik: nik || '',
+            tanggalLahir: tanggalLahir || '',
+            tempatLahir: tempatLahir || '',
+        });
+
+        res.status(201).send({
+            uid: userRecord.uid,
+            email: userRecord.email,
+            message: 'User registered successfully',
+        });
     } catch (error) {
-        res.status(500).send('Error updating user profile: ' + error.message);
+        res.status(500).send('Error registering user: ' + error.message);
     }
 });
 
