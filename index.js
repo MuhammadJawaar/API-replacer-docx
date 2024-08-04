@@ -4,6 +4,7 @@ const PizZip = require('pizzip');
 const Docxtemplater = require('docxtemplater');
 const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
 
 // Ambil variabel lingkungan dan parsing JSON
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
@@ -16,9 +17,10 @@ admin.initializeApp({
 
 const storage = admin.storage().bucket();
 const db = admin.firestore();
+const auth = admin.auth();
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
 
 const multerStorage = multer.memoryStorage();
 const upload = multer({ storage: multerStorage });
@@ -41,7 +43,6 @@ function extractTags(content) {
 app.get("/", (req, res) => {
     res.send("Express on Vercel");
 });
-
 
 // Endpoint to upload template to Firebase Storage and Firestore
 app.post('/upload-template', upload.single('template'), async (req, res) => {
@@ -167,6 +168,31 @@ app.get('/profile/:uid', async (req, res) => {
     }
 });
 
+// Endpoint to update user profile data
+app.put('/profile/:uid', async (req, res) => {
+    const { uid } = req.params;
+    const { email, nik, tanggalLahir, tempatLahir } = req.body;
+
+    try {
+        const userDoc = db.collection('users').doc(uid);
+        const userSnapshot = await userDoc.get();
+
+        if (!userSnapshot.exists) {
+            return res.status(404).send('User not found');
+        }
+
+        await userDoc.update({
+            email: email || userSnapshot.data().email,
+            nik: nik || userSnapshot.data().nik,
+            tanggalLahir: tanggalLahir || userSnapshot.data().tanggalLahir,
+            tempatLahir: tempatLahir || userSnapshot.data().tempatLahir,
+        });
+
+        res.send('User profile updated successfully');
+    } catch (error) {
+        res.status(500).send('Error updating user profile: ' + error.message);
+    }
+});
 
 app.post('/register', async (req, res) => {
     const { email, password, nik, tanggalLahir, tempatLahir } = req.body;
