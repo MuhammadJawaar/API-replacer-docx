@@ -88,7 +88,7 @@ app.post('/upload-template', upload.single('template'), async (req, res) => {
     blobStream.end(req.file.buffer);
 });
 
-// Endpoint to generate DOCX file and send as download without saving to storage
+
 app.post('/generate-docx', upload.none(), async (req, res) => {
     const { templateId, ...replacements } = req.body;
 
@@ -168,8 +168,24 @@ app.get('/profile/:uid', async (req, res) => {
 });
 
 // Endpoint to update user profile data
+app.patch('/update-profile/:uid', async (req, res) => {
+    const { uid } = req.params;
+    const updates = req.body;
 
+    try {
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (!userDoc.exists) {
+            return res.status(404).send('User not found');
+        }
 
+        await db.collection('users').doc(uid).update(updates);
+        res.send('User profile updated successfully');
+    } catch (error) {
+        res.status(500).send('Error updating user profile: ' + error.message);
+    }
+});
+
+// Endpoint to register a new user
 app.post('/register', async (req, res) => {
     const { email, password, nik, tanggalLahir, tempatLahir } = req.body;
 
