@@ -169,7 +169,7 @@ app.get('/profile/:uid', async (req, res) => {
 });
 
 // Endpoint to update user profile data
-app.put('/profile/:uid', async (req, res) => {
+app.put('/profile-update/:uid', async (req, res) => {
     const { uid } = req.params;
     const { email, nik, tanggalLahir, tempatLahir } = req.body;
 
