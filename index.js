@@ -42,7 +42,6 @@ app.get("/", (req, res) => {
     res.send("Express on Vercel");
 });
 
-
 // Endpoint to upload template to Firebase Storage and Firestore
 app.post('/upload-template', upload.single('template'), async (req, res) => {
     if (!req.file) {
@@ -150,6 +149,22 @@ app.get('/templates', async (req, res) => {
     }
 });
 
+// Endpoint to get signed URL
+app.get('/signed-url/:filename', async (req, res) => {
+    const { filename } = req.params;
+    const file = storage.file(filename);
+
+    try {
+        const [url] = await file.getSignedUrl({
+            action: 'read',
+            expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+        });
+        res.json({ url });
+    } catch (error) {
+        res.status(500).send('Error generating signed URL');
+    }
+});
+
 // Endpoint to get user profile data
 app.get('/profile/:uid', async (req, res) => {
     const { uid } = req.params;
@@ -192,8 +207,6 @@ app.put('/profile-update/:uid', async (req, res) => {
     }
 });
 
-
-
 app.post('/register', async (req, res) => {
     const { email, password, nik, tanggalLahir, tempatLahir } = req.body;
 
@@ -203,7 +216,7 @@ app.post('/register', async (req, res) => {
 
     try {
         // Create user in Firebase Authentication
-        const userRecord = await auth.createUser({
+        const userRecord = await admin.auth().createUser({
             email: email,
             password: password,
         });
