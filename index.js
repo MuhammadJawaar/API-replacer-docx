@@ -165,6 +165,33 @@ app.get('/signed-url/:filename', async (req, res) => {
     }
 });
 
+// Endpoint to delete a template from Firebase Storage and Firestore
+app.delete('/delete-template/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Retrieve the template document
+        const templateDoc = await db.collection('templates').doc(id).get();
+        if (!templateDoc.exists) {
+            return res.status(404).send('Template not found');
+        }
+
+        const templateData = templateDoc.data();
+        const fileName = templateData.name;
+
+        // Delete the file from Firebase Storage
+        const file = storage.file(fileName);
+        await file.delete();
+
+        // Delete the template document from Firestore
+        await db.collection('templates').doc(id).delete();
+
+        res.send('Template deleted successfully');
+    } catch (error) {
+        res.status(500).send('Error deleting template: ' + error.message);
+    }
+});
+
 // Endpoint to get user profile data
 app.get('/profile/:uid', async (req, res) => {
     const { uid } = req.params;
